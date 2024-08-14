@@ -5,7 +5,10 @@
 // https://doc.rust-lang.org/std/convert/trait.TryFrom.html
 
 #![allow(clippy::useless_vec)]
-use std::convert::{TryFrom, TryInto};
+use std::{
+    convert::{TryFrom, TryInto},
+    fmt::Error,
+};
 
 #[derive(Debug, PartialEq)]
 struct Color {
@@ -23,19 +26,50 @@ enum IntoColorError {
     IntConversion,
 }
 
+fn is_valid_interval(value: i16, max: i16) -> bool {
+    value >= 0 && value <= max
+}
+
 // TODO: Tuple implementation.
 // Correct RGB color values must be integers in the 0..=255 range.
 impl TryFrom<(i16, i16, i16)> for Color {
     type Error = IntoColorError;
 
-    fn try_from(tuple: (i16, i16, i16)) -> Result<Self, Self::Error> {}
+    fn try_from(tuple: (i16, i16, i16)) -> Result<Self, Self::Error> {
+        if !is_valid_interval(tuple.0, 255)
+            || !is_valid_interval(tuple.1, 255)
+            || !is_valid_interval(tuple.2, 255)
+        {
+            return Err(IntoColorError::IntConversion);
+        }
+
+        Ok(Color {
+            red: tuple.0 as u8,
+            green: tuple.1 as u8,
+            blue: tuple.2 as u8,
+        })
+    }
 }
 
 // TODO: Array implementation.
 impl TryFrom<[i16; 3]> for Color {
     type Error = IntoColorError;
 
-    fn try_from(arr: [i16; 3]) -> Result<Self, Self::Error> {}
+    fn try_from(arr: [i16; 3]) -> Result<Self, Self::Error> {
+        if arr.len() < 3 || arr.len() > 3 {
+            return Err(IntoColorError::BadLen);
+        }
+
+        if !arr.iter().all(|v| is_valid_interval(v.clone(), 255)) {
+            return Err(IntoColorError::IntConversion);
+        }
+
+        Ok(Color {
+            red: arr[0] as u8,
+            green: arr[1] as u8,
+            blue: arr[2] as u8,
+        })
+    }
 }
 
 // TODO: Slice implementation.
@@ -43,7 +77,21 @@ impl TryFrom<[i16; 3]> for Color {
 impl TryFrom<&[i16]> for Color {
     type Error = IntoColorError;
 
-    fn try_from(slice: &[i16]) -> Result<Self, Self::Error> {}
+    fn try_from(slice: &[i16]) -> Result<Self, Self::Error> {
+        if slice.len() < 3 || slice.len() > 3 {
+            return Err(IntoColorError::BadLen);
+        }
+
+        if !slice.iter().all(|v| is_valid_interval(v.clone(), 255)) {
+            return Err(IntoColorError::IntConversion);
+        }
+
+        Ok(Color {
+            red: slice[0] as u8,
+            green: slice[1] as u8,
+            blue: slice[2] as u8,
+        })
+    }
 }
 
 fn main() {
